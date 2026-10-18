@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Azure IoT Hub Telemetry</title>
+<style>
+:root{--bg:#070b14;--panel:#0c1322;--line:#1e2b45;--text:#e2eaf7;--mute:#7f90b0;--blue:#38bdf8;--green:#34d399;--violet:#a78bfa;--amber:#fbbf24;--red:#f87171}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);background-image:linear-gradient(rgba(56,189,248,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(56,189,248,.04) 1px,transparent 1px);background-size:28px 28px;color:var(--text);font:14px/1.5 "Segoe UI",system-ui,sans-serif;padding:20px 16px 40px}
+.wrap{max-width:1120px;margin:auto}
+.mono{font-family:ui-monospace,"Cascadia Code",Consolas,monospace}
+.card{background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:18px;margin-top:14px}
+.card.glow{border-color:#0e7bb5;box-shadow:0 0 24px rgba(56,189,248,.12)}
+.lbl{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);font-weight:600}
+.ttl{font-size:13px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.tag{font-size:10px;padding:2px 8px;border-radius:5px;background:rgba(56,189,248,.14);border:1px solid rgba(56,189,248,.35);color:var(--blue);letter-spacing:.06em;font-weight:700}
+.tag.g{background:rgba(52,211,153,.12);border-color:rgba(52,211,153,.4);color:var(--green)}
+hr{border:0;border-top:2px solid var(--line);margin:14px 0}
+hr.d{border-top-style:dashed}
+button{font:inherit;font-size:13px;font-weight:600;color:var(--text);background:#111b30;border:2px solid var(--line);border-radius:9px;padding:7px 14px;cursor:pointer}
+button:hover{border-color:#2f6ea0}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+button.on,button[aria-selected=true]{background:#0b6fa4;border-color:var(--blue)}
+header{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.logo{width:54px;height:54px;border-radius:14px;background:#0b2a44;border:2px solid #0e7bb5;display:grid;place-items:center;font-size:24px;color:var(--blue)}
+h1{font-size:28px;line-height:1.1;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.sub{color:var(--mute);font-size:12.5px}
+.hr-right{margin-left:auto;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.pill{padding:8px 18px;border-radius:22px;border:2px solid #14704f;background:#0b2a22;color:var(--green);font-weight:700;display:flex;align-items:center;gap:8px}
+.pill.off{border-color:#7a5a12;background:#2a2108;color:var(--amber)}
+.dot{width:9px;height:9px;border-radius:50%;background:currentColor}
+.engine{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.engine .lbl{margin-right:auto}
+.engine .ep{margin-left:auto;color:var(--mute);font-size:12px}
+.grid{display:grid;gap:16px}.g2{grid-template-columns:1fr 1fr}.g4{grid-template-columns:repeat(4,1fr)}.gp{grid-template-columns:1fr 1fr 1.3fr 1.3fr}
+.prof b{font-size:19px;display:block}.prof .v{color:var(--blue);font-weight:700}
+.chip{font-size:12px;color:#b6c4de;background:#141e33;border-radius:8px;padding:4px 12px}
+input.big{width:100%;margin-top:8px;background:#060a12;border:2px solid #0e7bb5;border-radius:10px;padding:13px 16px;font-size:17px;color:var(--blue)}
+input.big.s{border-color:#14a56f;color:var(--green)}
+.hint{color:var(--mute);font-size:12px;margin-top:8px}
+.err{color:var(--red);font-size:12.5px;min-height:18px;margin-top:6px}
+.presets{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+.presets button{font-size:12.5px}
+.stat{background:var(--panel);border:2px solid var(--line);border-radius:14px;padding:16px}
+.stat b{display:block;font-size:30px;line-height:1.2;margin:4px 0}
+.stat small{color:var(--mute);font-size:12px}
+.tabs{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;border-bottom:2px solid var(--line);padding-bottom:14px}
+.tabs button{background:transparent;border-color:transparent;color:#b6c4de}
+.tabs button[aria-selected=true]{background:#162238;border-color:#2c4468;color:var(--blue)}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.sp{margin-left:auto}
+.ago{background:#141e33;color:var(--mute);padding:3px 12px;border-radius:8px;font-size:12px}
+.live{width:9px;height:9px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green)}
+.box{background:#060a12;border:2px solid var(--line);border-radius:10px;padding:16px 18px;word-break:break-all}
+.box.v{color:var(--blue);font-size:19px;line-height:1.7}
+.box.s{font-size:30px;font-weight:700}
+.sec{margin-top:20px}
+.sec .row{margin-bottom:8px}
+.cnt{color:var(--mute);font-size:12px}
+.chars{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px;margin-top:10px}
+.chars div{background:#060a12;border:2px solid var(--line);border-radius:9px;padding:8px;text-align:center;font-size:13px}
+.chars b{color:var(--amber)}.chars i{color:var(--green);font-style:normal;font-weight:700;font-size:16px}
+.bench{border:2px dashed #2a4a6a;border-radius:10px;padding:14px;margin-top:12px}
+.log{max-height:340px;overflow:auto;font-size:13px}
+.log div{padding:6px 0;border-bottom:1px solid var(--line);display:flex;gap:14px;flex-wrap:wrap}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line)}
+th{color:var(--mute);font-size:11px;letter-spacing:.08em;text-transform:uppercase}
+.tblwrap{overflow-x:auto}
+.hide{display:none}
+dialog{background:var(--panel);color:var(--text);border:2px solid #0e7bb5;border-radius:14px;padding:22px;max-width:440px;width:92%}
+dialog::backdrop{background:rgba(0,0,0,.65)}
+dialog select{background:#060a12;color:var(--text);border:2px solid var(--line);border-radius:8px;padding:8px;font:inherit;margin-top:8px;width:100%}
+@media(max-width:820px){.g2,.g4,.gp{grid-template-columns:1fr 1fr}h1{font-size:22px}}
+@media(max-width:520px){.g2,.g4,.gp{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="logo" aria-hidden="true">▲</div>
+  <div>
+    <h1>Azure IoT Hub Telemetry <span class="tag">v2.6 DUAL-ENGINE</span></h1>
+    <div class="sub">Multi-Device Universal Dashboard • User ASCII Decoder • Python Flask &amp; Spring Boot</div>
+  </div>
+  <div class="hr-right">
+    <div class="pill" id="conn"><span class="dot"></span><span id="connTxt">CONNECTED</span></div>
+    <button id="btnMobile" style="border-color:#0e7bb5;color:var(--blue)">📱 Mobile Access</button>
+    <button id="btnMute">🔊 Mute</button>
+    <button id="btnSet" aria-label="Settings">⚙</button>
+  </div>
+</header>
+<hr>
+
+<section class="card engine">
+  <span class="lbl">Backend engine:</span>
+  <div class="row" id="engines"></div>
+  <span class="ep mono" id="ep">Endpoint: /api/latest</span>
+</section>
+
+<section class="card">
+  <div class="row"><div class="ttl" style="color:var(--blue)">🛡 Student verification profile</div><span class="chip sp" id="pCollege"></span></div>
+  <hr>
+  <div class="grid gp prof">
+    <div><div class="lbl">1. Student name</div><b id="pName"></b></div>
+    <div><div class="lbl">2. Roll number</div><b class="v mono" id="pRoll"></b></div>
+    <div><div class="lbl">Academic department</div><div id="pDept"></div></div>
+    <div><div class="lbl">System platform</div><div id="pPlat"></div></div>
+  </div>
+</section>
+
+<section class="card glow">
+  <div class="ttl">⌨ Interactive user ASCII input &amp; live decoder <span class="tag g">● Live Azure stream ingestion</span></div>
+  <hr>
+  <div class="grid g2">
+    <div>
+      <div class="row"><label class="lbl" style="color:var(--blue)" for="ascii">Give ASCII values here (comma or space separated)</label><span class="cnt sp">Decodes as you type</span></div>
+      <input id="ascii" class="big mono" autocomplete="off">
+      <div class="hint">Tip: Enter any integers between 0 and 127 (e.g., 72, 101, 108, 108, 111).</div>
+    </div>
+    <div>
+      <div class="row"><label class="lbl" style="color:var(--green)" for="txt">Or type plain string here (encodes to ASCII)</label><span class="cnt sp">Two-way converter</span></div>
+      <input id="txt" class="big s mono" autocomplete="off">
+      <div class="hint">Converts each character into its ASCII decimal code automatically.</div>
+    </div>
+  </div>
+  <div class="err" id="err" role="alert"></div>
+  <hr>
+  <div class="lbl">Quick evaluator presets:</div>
+  <div class="presets" id="presets"></div>
+</section>
+
+<section class="grid g4" style="margin-top:14px">
+  <div class="stat"><div class="lbl">Total ingested events</div><b class="mono" id="sEv">0</b><small>Partition 1 stream</small></div>
+  <div class="stat"><div class="lbl">Ingestion latency</div><b class="mono" id="sLat" style="color:var(--blue)">0 ms</b><small>AMQP to browser poll</small></div>
+  <div class="stat"><div class="lbl">Processed bytes</div><b class="mono" id="sB" style="color:var(--violet)">0 B/msg</b><small>ASCII payload buffer</small></div>
+  <div class="stat"><div class="lbl">Event rate</div><b class="mono" id="sR" style="color:var(--green)">0 /min</b><small>Azure IoT simulator cadence</small></div>
+</section>
+
+<div class="tabs" role="tablist" id="tabs">
+  <button role="tab" aria-selected="true" data-t="live">📡 Live Telemetry &amp; Decoder</button>
+  <button role="tab" aria-selected="false" data-t="hist" id="tHist">📋 Stream History &amp; Logs (0)</button>
+  <button role="tab" aria-selected="false" data-t="insp">🔬 Deep Character Inspector</button>
+  <button role="tab" aria-selected="false" data-t="hub">⚙ Azure Hub Health</button>
+</div>
+
+<section class="card" id="p-live">
+  <div class="row">
+    <span class="live"></span><div class="ttl">Live Azure IoT Hub ingestion</div><span class="chip">Partition 1</span>
+    <button id="pause" class="sp">⏸ Pause stream</button><span class="ago" id="ago">just now</span>
+  </div>
+  <hr>
+  <div class="sec" style="margin-top:0">
+    <div class="row"><span class="ttl">4. Received ASCII values</span><span class="tag">REQUIRED</span><span class="cnt sp" id="cC1"></span></div>
+    <div class="box v mono" id="lA"></div>
+  </div>
+  <div class="sec">
+    <div class="row"><span class="ttl">5. Converted string</span><span class="tag">REQUIRED</span><span class="cnt sp" id="cC2"></span></div>
+    <div class="box s mono" id="lS"></div>
+  </div>
+  <hr>
+  <div class="row" style="align-items:flex-start">
+    <div>
+      <div class="row"><span class="ttl">6. Last event timestamp</span><span class="tag">REQUIRED</span></div>
+      <div class="mono" style="font-size:18px;font-weight:700" id="lT"></div>
+      <div class="cnt mono" id="lU"></div>
+    </div>
+    <div class="sp" style="text-align:right"><div class="lbl">Connection status</div><div style="color:var(--green);font-weight:700" id="lC">CONNECTED</div><div class="cnt">Mode: Cloud simulator</div></div>
+  </div>
+  <hr class="d">
+  <div class="cnt mono">Raw payload stream: <span style="color:var(--text)" id="lR"></span></div>
+</section>
+
+<section class="card hide" id="p-hist">
+  <div class="ttl">Stream history &amp; logs</div><hr>
+  <div class="log mono" id="log"></div>
+</section>
+
+<section class="card hide" id="p-insp">
+  <div class="ttl">Deep character inspector</div>
+  <div class="hint">Breakdown of the current payload: character, decimal, hex and binary.</div><hr>
+  <div class="tblwrap"><table class="mono"><thead><tr><th>#</th><th>Char</th><th>Decimal</th><th>Hex</th><th>Binary</th></tr></thead><tbody id="inspBody"></tbody></table></div>
+</section>
+
+<section class="card hide" id="p-hub">
+  <div class="ttl">Azure hub health</div><hr>
+  <div class="grid g4" id="hubGrid"></div>
+</section>
+
+<section class="card">
+  <div class="row"><div class="ttl">ASCII code → string conversion demonstration</div><span class="chip sp mono">String.fromCharCode(code)</span></div>
+  <div class="hint">Demonstrating byte-by-byte decimal mapping to characters using <span class="mono">String.fromCharCode(code)</span>.</div>
+  <div class="bench">
+    <div class="lbl">Assignment specification benchmark</div>
+    <div class="mono" style="margin-top:6px">● Received ASCII values: <span style="color:var(--blue)">72, 101, 108, 108, 111</span></div>
+    <div class="mono">● Converted string: <span style="color:var(--green)">Hello</span></div>
+  </div>
+  <div class="lbl" style="margin-top:14px" id="mapLbl"></div>
+  <div class="chars mono" id="chars"></div>
+</section>
+
+</div>
+
+<dialog id="dlg"><div id="dlgBody"></div><div style="margin-top:16px;text-align:right"><button id="dlgClose">Close</button></div></dialog>
+
+<script>
+// ====== EDIT YOUR DETAILS HERE ======
+const PROFILE = {
+  name: "Brindha Ganesan",
+  roll: "24EIR015",
+  college: "Kongu Engineering College • Department of EIE",
+  dept: "Electronics and Instrumentation Engineering",
+  platform: "Spring Boot & Flask Dual-Engine IoT Dashboard"
+};
+// ====================================
+const $ = id => document.getElementById(id);
+const toStr = c => c.map(n => String.fromCharCode(n)).join("");
+const toCodes = s => [...s].map(ch => ch.charCodeAt(0));
+const mk = (tag, text, cls) => { const e = document.createElement(tag); if (text !== undefined) e.textContent = text; if (cls) e.className = cls; return e; };
+
+$("pName").textContent = PROFILE.name; $("pRoll").textContent = PROFILE.roll;
+$("pCollege").textContent = PROFILE.college; $("pDept").textContent = PROFILE.dept; $("pPlat").textContent = PROFILE.platform;
+
+// Backend engine selector (UI simulation)
+const ENGINES = [["🐍 Python Flask (:5000)","Endpoint: /api/latest"],["🍃 Java Spring Boot (:8080)","Endpoint: /api/latest"],["▲ Vercel Cloud Serverless","Endpoint: /api/latest (serverless)"]];
+ENGINES.forEach(([n, ep], i) => {
+  const b = mk("button", n); if (!i) b.classList.add("on");
+  b.onclick = () => { document.querySelectorAll("#engines button").forEach(x => x.classList.remove("on")); b.classList.add("on"); $("ep").textContent = ep; };
+  $("engines").appendChild(b);
+});
+
+// Presets
+const sample = t => toCodes(t).join(", ");
+[["⭐ Assignment Spec: \"Hello\" (72, 101, 108, 108, 111)","Hello"],[`"${PROFILE.name}"`,PROFILE.name],[`"${PROFILE.roll}"`,PROFILE.roll],["\"Azure IoT\"","Azure IoT"],["IoT Sensor \"Temp: 24.5C\"","Temp: 24.5C"]].forEach(([l, t], i) => {
+  const b = mk("button", l); if (!i) b.classList.add("on");
+  b.onclick = () => { $("txt").value = t; encode(); };
+  $("presets").appendChild(b);
+});
+
+function renderChars(codes){
+  $("mapLbl").textContent = `Character-by-character mapping breakdown (${codes.length} bytes):`;
+  $("chars").replaceChildren(...codes.map(c => { const d = mk("div"); d.append(mk("b", c), mk("span", " → "), mk("i", c === 32 ? "␣" : String.fromCharCode(c))); return d; }));
+}
+function decode(){
+  const nums = $("ascii").value.replace(/[\[\]]/g, "").split(/[,\s]+/).filter(Boolean).map(Number);
+  if (nums.some(n => !Number.isInteger(n) || n < 0 || n > 127)) { $("err").textContent = "Use whole numbers from 0 to 127, separated by commas or spaces."; return; }
+  $("err").textContent = ""; $("txt").value = toStr(nums); renderChars(nums);
+}
+function encode(){
+  const codes = toCodes($("txt").value);
+  $("err").textContent = codes.some(c => c > 127) ? "Only standard ASCII characters (0 to 127) are supported." : "";
+  $("ascii").value = codes.join(", "); renderChars(codes);
+}
+$("ascii").addEventListener("input", decode);
+$("txt").addEventListener("input", encode);
+$("txt").value = "Hello"; encode();
+
+// Tabs
+document.querySelectorAll("#tabs button").forEach(b => b.onclick = () => {
+  document.querySelectorAll("#tabs button").forEach(x => x.setAttribute("aria-selected", x === b));
+  ["live","hist","insp","hub"].forEach(t => $("p-" + t).classList.toggle("hide", t !== b.dataset.t));
+});
+
+// Stream simulation
+const MSGS = ["one_credit_course_project","Hello","Temp: 24.5C","Azure IoT",PROFILE.roll,"Sensor-01 OK"];
+let idx = 0, events = 0, paused = false, interval = 10, last = Date.now(), t0 = Date.now(), timer, muted = false, current = "", errors = 0;
+
+function beep(){
+  if (muted) return;
+  try { const a = new (window.AudioContext || window.webkitAudioContext)(), o = a.createOscillator(), g = a.createGain();
+    o.frequency.value = 660; g.gain.value = .04; o.connect(g); g.connect(a.destination); o.start(); o.stop(a.currentTime + .08); } catch (e) {}
+}
+function renderInspector(){
+  $("inspBody").replaceChildren(...toCodes(current).map((c, i) => { const r = mk("tr");
+    [i + 1, c === 32 ? "␣" : String.fromCharCode(c), c, c.toString(16).toUpperCase().padStart(2, "0"), c.toString(2).padStart(8, "0")].forEach(v => r.appendChild(mk("td", v))); return r; }));
+}
+function renderHub(){
+  const items = [["Hub name","iothub-demo"],["Partition","1 of 4"],["Uptime",Math.floor((Date.now() - t0)/1000) + " s"],["Messages received",events],["Errors",errors],["Protocol","AMQP over TLS"],["Interval",interval + " s"],["Status",paused ? "PAUSED" : "HEALTHY"]];
+  $("hubGrid").replaceChildren(...items.map(([k, v]) => { const d = mk("div", undefined, "stat"); d.append(mk("div", k, "lbl"), mk("b", v, "mono")); d.querySelector("b").style.fontSize = "20px"; return d; }));
+}
+function tick(){
+  if (paused) return;
+  current = MSGS[idx++ % MSGS.length]; const codes = toCodes(current), now = new Date();
+  events++; last = Date.now();
+  $("lA").textContent = codes.join(", "); $("lS").textContent = current;
+  $("cC1").textContent = codes.length + " codes"; $("cC2").textContent = codes.length + " characters";
+  $("lT").textContent = now.toLocaleString("en-GB"); $("lU").textContent = "UTC: " + now.toISOString(); $("lR").textContent = current;
+  $("sEv").textContent = events; $("sLat").textContent = (4 + Math.floor(Math.random() * 8)) + " ms";
+  $("sB").textContent = codes.length + " B/msg"; $("sR").textContent = (60 / interval).toFixed(1) + " /min";
+  $("tHist").textContent = `📋 Stream History & Logs (${events})`;
+  const line = mk("div"); line.append(mk("span", now.toLocaleTimeString("en-GB")), mk("span", current), mk("span", codes.join(" "), "cnt"));
+  $("log").prepend(line); renderInspector(); renderHub(); beep();
+}
+function start(){ clearInterval(timer); timer = setInterval(tick, interval * 1000); }
+setInterval(() => { const s = Math.floor((Date.now() - last) / 1000); $("ago").textContent = paused ? "paused" : (s < 2 ? "just now" : s + " seconds ago"); }, 1000);
+tick(); start();
+
+$("pause").onclick = () => {
+  paused = !paused; $("pause").textContent = paused ? "▶ Resume stream" : "⏸ Pause stream";
+  $("connTxt").textContent = $("lC").textContent = paused ? "PAUSED" : "CONNECTED";
+  $("conn").classList.toggle("off", paused); $("lC").style.color = paused ? "var(--amber)" : "var(--green)"; renderHub();
+};
+$("btnMute").onclick = () => { muted = !muted; $("btnMute").textContent = muted ? "🔇 Unmute" : "🔊 Mute"; };
+
+// Dialogs
+const dlg = $("dlg");
+$("dlgClose").onclick = () => dlg.close();
+$("btnMobile").onclick = () => {
+  $("dlgBody").replaceChildren(mk("div", "📱 Mobile access", "ttl"), mk("p", "Open this link on your phone:", "hint"), mk("div", location.href, "box mono"), mk("p", "Use the Vercel link after you deploy, so it works on any network.", "hint"));
+  dlg.showModal();
+};
+$("btnSet").onclick = () => {
+  const sel = mk("select"); [2, 5, 10, 20].forEach(v => { const o = mk("option", v + " seconds"); o.value = v; if (v === interval) o.selected = true; sel.appendChild(o); });
+  sel.onchange = () => { interval = Number(sel.value); start(); tick(); };
+  const lab = mk("label", "Stream interval", "lbl"); lab.appendChild(sel);
+  $("dlgBody").replaceChildren(mk("div", "⚙ Settings", "ttl"), lab); dlg.showModal();
+};
+</script>
+</body>
+</html>
